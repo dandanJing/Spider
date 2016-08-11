@@ -11,6 +11,8 @@
 
 import threading
 import Queue
+import signal
+import sys
 from spider import Spider
 from domain import *
 from general import *
@@ -48,18 +50,47 @@ class Main:
         for link in file_to_set(QUEUE_FILE):
             queue.put(link)
         queue.join()
-        crawl()
+        self.crawl()
 
     #Check if there are items in the queue, if so crawl them
     def crawl(self):
-        queued_links = file_to_set(QUEUE_FILE)
-        if len(queued_links) > 0:
-            print(str(len(queued_links)) + ' links in the queue')
-            self.create_jobs()
+            queued_links = file_to_set(QUEUE_FILE)
+            if len(queued_links) > 0:
+                print(str(len(queued_links)) + ' links in the queue')
+                self.create_jobs()
 
+
+''' The watcher is a concurrent process (not thread) that 
+    waits for a signal and the process that contains the 
+    threads.  See Appendix A of The Little Book of Semaphores. 
+    http://greenteapress.com/semaphores/ 
+'''
+class Watcher:  
+    def __init__(self):  
+        """ Creates a child thread, which returns.  The parent 
+            thread waits for a KeyboardInterrupt and then kills 
+            the child thread. 
+        """  
+        self.child = os.fork()  
+        if self.child == 0:  
+            return  
+        else:  
+            self.watch()  
+
+    def watch(self):  
+        try:  
+            os.wait()  
+        except KeyboardInterrupt:  
+            print '\nKeyBoardInterrupt'  
+            self.kill()  
+        sys.exit()  
+  
+    def kill(self):  
+        try:  
+            os.kill(self.child, signal.SIGKILL)  
+        except OSError: pass 
+
+
+Watcher() 
 if __name__ == "__main__":
-    try:
-        main = Main()
-    except KeyboardInterrupt, e:
-        print '\nBreak out.'
-        sys.exit()
+    main = Main()

@@ -1,5 +1,8 @@
-import os
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
+import os
+import codecs
 
 # Each website is a separate project (folder)
 def create_dir(directory):
@@ -19,6 +22,10 @@ def write_file(path, data):
     with open(path, 'w') as f:
         f.write(data)
 
+def write_data_to_file(data, file_name):
+    with codecs.open(file_name, 'w', 'utf-16') as f:
+        for d in data:
+            f.write(d + "\n")
 
 # Add data onto an existing file
 def append_to_file(path, data):
@@ -44,4 +51,8 @@ def file_to_set(file_name):
 def set_to_file(links, file_name):
     with open(file_name,"w") as f:
         for l in sorted(links):
-            f.write(l+"\n")
+            try:
+                f.write(l + "\n")
+            except Exception as e:
+                print("set_to_file: " + str(e))
+                print l
