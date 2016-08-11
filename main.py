@@ -24,38 +24,42 @@ NUMBER_OF_THREADS = 8
 queue = Queue.Queue()
 Spider(BASE_URL, DOMAIN_NAME, QUEUE_FILE, CRAWLED_FILE_PATH)
 
-# Create worker threads (will die when main exits)
-def create_workers():
-    for _ in range(NUMBER_OF_THREADS):
-        t = threading.Thread(target=work)
-        t.daemon = True
-        t.start()
+class Main:
+    def __init__(self):
+        self.create_workers()
+        self.crawl()
 
-# Do the next job in the queue
-def work():
-    while True:
-        url = queue.get()
-        Spider.crawl_page(threading.current_thread().name, url)
-        queue.task_done()
+    # Create worker threads (will die when main exits)
+    def create_workers(self):
+        for _ in range(NUMBER_OF_THREADS):
+            t = threading.Thread(target=self.work)
+            t.daemon = True
+            t.start()
 
-# Each queued link is a new job
-def create_jobs():
-    for link in file_to_set(QUEUE_FILE):
-        queue.put(link)
-    queue.join()
-    crawl()
+    # Do the next job in the queue
+    def work(self):
+        while True:
+            url = queue.get()
+            Spider.crawl_page(threading.current_thread().name, url)
+            queue.task_done()
 
-#Check if there are items in the queue, if so crawl them
-def crawl():
-    queued_links = file_to_set(QUEUE_FILE)
-    if len(queued_links) > 0:
-        print(str(len(queued_links)) + ' links in the queue')
-        create_jobs()
+    # Each queued link is a new job
+    def create_jobs(self):
+        for link in file_to_set(QUEUE_FILE):
+            queue.put(link)
+        queue.join()
+        crawl()
+
+    #Check if there are items in the queue, if so crawl them
+    def crawl(self):
+        queued_links = file_to_set(QUEUE_FILE)
+        if len(queued_links) > 0:
+            print(str(len(queued_links)) + ' links in the queue')
+            self.create_jobs()
 
 if __name__ == "__main__":
     try:
-        create_workers()
-        crawl()
+        main = Main()
     except KeyboardInterrupt, e:
         print '\nBreak out.'
         sys.exit()
